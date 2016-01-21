@@ -153,9 +153,11 @@ __attribute__((fastcall)) void switch_to_user_process(PCB *p) {
 	current_process->cpu.EDX = p->cpu.EDX;
 	current_process->cpu.EBP = p->cpu.EBP;
 
+
     
 	// TODO: Push into stack the following values from process p's PCB: SS,
     	// ESP, EFLAGS, CS, EIP (in this order)
+
 
 	// TODO: load ECX with value from process p's PCB
 
