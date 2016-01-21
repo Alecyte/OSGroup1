@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# This shell script will create a zip file containing everything
+# in your SOS directory needed to build SOS with your modifications.
+# It will omit build output files (.o, .bin, and .dsk) and editor
+# backup files (files ending in ~).  The zip file will be placed on
+# your Desktop, with a name containing the date and time when this
+# shell script was run.
+
+dest=${HOME}/Desktop
+output_file="${dest}/SOS_$(date '+%Y-%m-%d-%H-%M-%S').zip"
+
+echo "Archiving a copy of your SOS directory"
+echo "    from ${PWD}"
+echo "    to   ${output_file}"
+zipdir="$(basename "$PWD")"
+( cd .. ; zip -r9 "${output_file}" "$zipdir" --exclude '*.o' '*.out' '*.bin' '*.dsk' '*~' )
+

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+CONF_FILE="${1##*/}"  
+CONF_DIR="${1%/*}" # get directory/path name
+
+cat $1 | while read LINE
+	do
+		FNAME=$(echo $LINE | cut -d' ' -f1)
+		LBA=$(echo $LINE | cut -d' ' -f2)
+		if [ ! -z $FNAME ] && [ ! -z $LBA ] ; then
+			FSIZE=$(stat -c %s $CONF_DIR/$FNAME)
+			echo "$FNAME @ $LBA ($FSIZE bytes)"
+			dd if=$CONF_DIR/$FNAME of=../SOS.dsk bs=512 conv=notrunc seek=$LBA status=noxfer >& /dev/null
+		fi
+	done
+
