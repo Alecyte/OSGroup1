@@ -44,6 +44,8 @@ void run(uint32_t LBA, uint32_t n_sectors) {
 	// TODO: Save flags in the console's PCB
 	console.cpu.eflags = current_process->cpu.eflags;
 	// TODO: Save current stack pointers (ESP and EBP) in the console's PCB
+	console.cpu.ESP = current_process->cpu.ESP;
+	console.cpu.EBP = current_process->cpu.EBP;
 	
 	// save resume point: we will resume at forward label 1 (below)
 	asm volatile ("movl $1f,%0" : "=r"(console.cpu.eip));
