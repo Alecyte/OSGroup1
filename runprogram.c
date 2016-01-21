@@ -4,7 +4,7 @@
 
 #include "kernel_only.h"
 
-
+//kris commit
 extern GDT_DESCRIPTOR gdt[6];	// from startup.S
 extern TSS_STRUCTURE TSS;	// from systemcalls.c
 
