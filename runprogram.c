@@ -44,8 +44,8 @@ void run(uint32_t LBA, uint32_t n_sectors) {
 	// TODO: Save flags in the console's PCB
 	console.cpu.eflags = current_process->cpu.eflags;
 	// TODO: Save current stack pointers (ESP and EBP) in the console's PCB
-	console.cpu.ESP = current_process->cpu.ESP;
-	console.cpu.EBP = current_process->cpu.EBP;
+	console.cpu.esp = current_process->cpu.esp;
+	console.cpu.ebp = current_process->cpu.ebp;
 	
 	// save resume point: we will resume at forward label 1 (below)
 	asm volatile ("movl $1f,%0" : "=r"(console.cpu.eip));
@@ -60,7 +60,13 @@ void run(uint32_t LBA, uint32_t n_sectors) {
     	//          e) code segment (CS)
     	//          f) instruction pointer (EIP)
     	//          g) flags (EFLAGS)
-
+	user_program.memory_base = current_process->memory_base;
+	user_program.memory_limit = current_process->memory_limit;
+	user_program.cpu.ss = current_process->cpu.ss;
+	user_program.cpu.esp = current_process->cpu.esp;
+	user_program.cpu.cs = current_process->cpu.cs;
+	user_program.cpu.cs = current_process->cpu.eip;
+	user_program.cpu.cs = current_process->cpu.eflags;
 
 	current_process = &user_program;
 	switch_to_user_process(current_process);
@@ -106,7 +112,7 @@ __attribute__((fastcall)) void switch_to_user_process(PCB *p) {
 	// we will use the last 4KB of the process address space
 	TSS.ss0 = 0x10; // must be kernel data segment with RPL=0
     	// TODO: set TSS.esp0 
-	TSS.esp0 = p->cpu.esp0;
+	TSS.esp0 = p->cpu.esp;
 
 	// set up GDT entries 3 and 4
 	// TODO: set user GDT code/data segment to base = p->memory_base,
@@ -119,49 +125,62 @@ __attribute__((fastcall)) void switch_to_user_process(PCB *p) {
 	gdt[3].base_16_23 = ((p->memory_base & baseMask2) >> 16);
 	uint32_t baseMask3 = (0xFF000000u);
 	gdt[3].base_24_31 = ((p->memory_base & baseMask3) >> 24);
-	uint32_t tempLimit = (p->cpu.memory_limit << 16);
+	uint32_t tempLimit = (p->memory_limit << 16);
 	gdt[3].limit_0_15 = (tempLimit >> 16);
-	uint8_t flagMask = (0x0F);
-	uint8_t tempFlag = ((flagMask & p->flag) << 4);
+	//uint8_t flagMask = (0x0F);
+	//uint8_t tempFlag = ((flagMask & p->flag) << 4);
 	uint32_t limitMask2 = (0xF0000u);
-	uint8_t tempLimit2 = ((limitMask2 & p->limit) >> 16);
-	gdt[3].limit_and_flag = (tempFlag | tempLimit2) ;
-	gdt[3].access_byte = p->access_byte;
+	uint8_t tempLimit2 = ((limitMask2 & p->memory_limit) >> 16);
+	gdt[3].limit_and_flag = (0xC| tempLimit2) ;
+	gdt[3].access_byte = (0xFA);
 
-	uint32_t temo = (p->memory_base << 16);
-	gdt[4].base_0_15 = (temo >> 16 );
-	uint32_t baseMask2 = (0x00FF0000u);
-	gdt[4].base_16_23 = ((p->memory_base & baseMask2) >> 16);
-	uint32_t baseMask3 = (0xFF000000u);
-	gdt[4].base_24_31 = ((p->memory_base & baseMask3) >> 24);
-	uint32_t tempLimit = (p->cpu.memory_limit << 16);
-	gdt[4].limit_0_15 = (tempLimit >> 16);
-	uint8_t flagMask = (0x0F);
-	uint8_t tempFlag = ((flagMask & p->flag) << 4);
-	uint32_t limitMask2 = (0xF0000u);
-	uint8_t tempLimit2 = ((limitMask2 & p->limit) >> 16);
-	gdt[4].limit_and_flag = (tempFlag | tempLimit2) ;
-	gdt[4].access_byte = p->access_byte;
+	uint32_t temoRE = (p->memory_base << 16);
+	gdt[4].base_0_15 = (temoRE >> 16 );
+	uint32_t baseMask2RE = (0x00FF0000u);
+	gdt[4].base_16_23 = ((p->memory_base & baseMask2RE) >> 16);
+	uint32_t baseMask3RE = (0xFF000000u);
+	gdt[4].base_24_31 = ((p->memory_base & baseMask3RE) >> 24);
+	uint32_t tempLimitRE = (p->memory_limit << 16);
+	gdt[4].limit_0_15 = (tempLimitRE >> 16);
+	//uint8_t flagMaskRE = (0x0F);
+	//uint8_t tempFlagRE = ((flagMaskRE & p->flag) << 4);
+	uint32_t limitMask2RE = (0xF0000u);
+	uint8_t tempLimit2RE = ((limitMask2RE & p->memory_limit) >> 16);
+	gdt[4].limit_and_flag = (0xC | tempLimit2RE) ;
+	gdt[4].access_byte = (0xF2);
 
 	// TODO: load EDI, ESI, EAX, EBX, EDX, EBP with values from
     	// process p's PCB
-	current_process->cpu.EDI = p->cpu.EDI;
-	current_process->cpu.ESI = p->cpu.ESI;
-	current_process->cpu.EAX = p->cpu.EAX;
-	current_process->cpu.EBX = p->cpu.EBX;
-	current_process->cpu.EDX = p->cpu.EDX;
-	current_process->cpu.EBP = p->cpu.EBP;
+	asm volatile ("movl %0, %%edi\n": :"m"(p->cpu.edi));
+	asm volatile ("movl %0, %%esi\n": :"m"(p->cpu.esi));
+	asm volatile ("movl %0, %%eax\n": :"m"(p->cpu.eax));
+	asm volatile ("movl %0, %%ebx\n": :"m"(p->cpu.ebx));
+	asm volatile ("movl %0, %%edx\n": :"m"(p->cpu.edx));
+	asm volatile ("movl %0, %%ebp\n": :"m"(p->cpu.ebp));
 
     
 	// TODO: Push into stack the following values from process p's PCB: SS,
     	// ESP, EFLAGS, CS, EIP (in this order)
+	asm volatile ("pushl %0\n": :"m"(p->cpu.ss));
+	asm volatile ("pushl %0\n": :"m"(p->cpu.esp));
+	asm volatile ("pushl %0\n": :"m"(p->cpu.eflags));
+	asm volatile ("pushl %0\n": :"m"(p->cpu.cs));
+	asm volatile ("pushl %0\n": :"m"(p->cpu.eip));
 
 	// TODO: load ECX with value from process p's PCB
+	asm volatile ("movl %0, %%ecx\n": :"m"(p->cpu.ecx));
 
 	// TODO: load ES, DS, FS, GS registers with user data segment selector
+	asm volatile ("movw %0, %%es\n": :"m"(TSS.es));
+	asm volatile ("movw %0, %%ds\n": :"m"(TSS.ds));
+	asm volatile ("movw %0, %%fs\n": :"m"(TSS.fs));
+	asm volatile ("movw %0, %%gs\n": :"m"(TSS.gs));
 
 
 	// TODO: execute the IRETL instruction
+
+	asm volatile ("IRETL\n");
+
 
 }
 
