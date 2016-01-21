@@ -106,15 +106,52 @@ __attribute__((fastcall)) void switch_to_user_process(PCB *p) {
 	// we will use the last 4KB of the process address space
 	TSS.ss0 = 0x10; // must be kernel data segment with RPL=0
     	// TODO: set TSS.esp0 
+	TSS.esp0 = p->cpu.esp0;
 
 	// set up GDT entries 3 and 4
 	// TODO: set user GDT code/data segment to base = p->memory_base,
 	// limit = p->memory_limit, flag, and access byte (see kernel_only.h
     	// for definition of the GDT structure)
-	
+
+	uint32_t temo = (p->memory_base << 16);
+	gdt[3].base_0_15 = (temo >> 16 );
+	uint32_t baseMask2 = (0x00FF0000u);
+	gdt[3].base_16_23 = ((p->memory_base & baseMask2) >> 16);
+	uint32_t baseMask3 = (0xFF000000u);
+	gdt[3].base_24_31 = ((p->memory_base & baseMask3) >> 24);
+	uint32_t tempLimit = (p->cpu.memory_limit << 16);
+	gdt[3].limit_0_15 = (tempLimit >> 16);
+	uint8_t flagMask = (0x0F);
+	uint8_t tempFlag = ((flagMask & p->flag) << 4);
+	uint32_t limitMask2 = (0xF0000u);
+	uint8_t tempLimit2 = ((limitMask2 & p->limit) >> 16);
+	gdt[3].limit_and_flag = (tempFlag | tempLimit2) ;
+	gdt[3].access_byte = p->access_byte;
+
+	uint32_t temo = (p->memory_base << 16);
+	gdt[4].base_0_15 = (temo >> 16 );
+	uint32_t baseMask2 = (0x00FF0000u);
+	gdt[4].base_16_23 = ((p->memory_base & baseMask2) >> 16);
+	uint32_t baseMask3 = (0xFF000000u);
+	gdt[4].base_24_31 = ((p->memory_base & baseMask3) >> 24);
+	uint32_t tempLimit = (p->cpu.memory_limit << 16);
+	gdt[4].limit_0_15 = (tempLimit >> 16);
+	uint8_t flagMask = (0x0F);
+	uint8_t tempFlag = ((flagMask & p->flag) << 4);
+	uint32_t limitMask2 = (0xF0000u);
+	uint8_t tempLimit2 = ((limitMask2 & p->limit) >> 16);
+	gdt[4].limit_and_flag = (tempFlag | tempLimit2) ;
+	gdt[4].access_byte = p->access_byte;
 
 	// TODO: load EDI, ESI, EAX, EBX, EDX, EBP with values from
     	// process p's PCB
+	current_process->cpu.EDI = p->cpu.EDI;
+	current_process->cpu.ESI = p->cpu.ESI;
+	current_process->cpu.EAX = p->cpu.EAX;
+	current_process->cpu.EBX = p->cpu.EBX;
+	current_process->cpu.EDX = p->cpu.EDX;
+	current_process->cpu.EBP = p->cpu.EBP;
+
     
 	// TODO: Push into stack the following values from process p's PCB: SS,
     	// ESP, EFLAGS, CS, EIP (in this order)
