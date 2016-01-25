@@ -54,7 +54,7 @@ void run(uint32_t LBA, uint32_t n_sectors) {
 	/*console.cpu.esp = current_process->cpu.esp;
 	console.cpu.ebp = current_process->cpu.ebp;*/
 	asm volatile ("movl %%esp,%0" : "=r"(console.cpu.esp));
-	asm volatile("movl $1,%0" : "=r"(console.cpu.eip));
+	asm volatile("movl %%ebp,%0" : "=r"(console.cpu.ebp));
 
 
 	
@@ -185,7 +185,6 @@ __attribute__((fastcall)) void switch_to_user_process(PCB *p) {
 
 	// TODO: load EDI, ESI, EAX, EBX, EDX, EBP with values from
     	// process p's PCB
-	//took off all \n
 	asm volatile ("movl %0, %%edi\n": :"m"(p->cpu.edi));
 	asm volatile ("movl %0, %%esi\n": :"m"(p->cpu.esi));
 	asm volatile ("movl %0, %%eax\n": :"m"(p->cpu.eax));
@@ -207,16 +206,18 @@ __attribute__((fastcall)) void switch_to_user_process(PCB *p) {
 	// TODO: load ECX with value from process p's PCB
 	asm volatile ("movl %0, %%ecx\n": :"m"(p->cpu.ecx));
 
-	// TODO: load ES, DS, FS, GS registers with user data segment selector
-	asm volatile ("movw %0, %%es\n": :"m"(TSS.es));
-	asm volatile ("movw %0, %%ds\n": :"m"(TSS.ds));
-	asm volatile ("movw %0, %%fs\n": :"m"(TSS.fs));
-	asm volatile ("movw %0, %%gs\n": :"m"(TSS.gs));
-
-
-	// TODO: execute the IRETL instruction
+		// TODO: execute the IRETL instruction (was last)
 
 	asm volatile ("IRETL\n");
+
+	// TODO: load ES, DS, FS, GS registers with user data segment selector
+	asm volatile ("movw %0, %%es\n": :"m"(TSS.ss0));
+	asm volatile ("movw %0, %%ds\n": :"m"(TSS.ss0));
+	asm volatile ("movw %0, %%fs\n": :"m"(TSS.ss0));
+	asm volatile ("movw %0, %%gs\n": :"m"(TSS.ss0));
+
+
+
 
 
 }
