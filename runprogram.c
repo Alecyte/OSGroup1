@@ -54,11 +54,11 @@ void run(uint32_t LBA, uint32_t n_sectors) {
 	/*console.cpu.esp = current_process->cpu.esp;
 	console.cpu.ebp = current_process->cpu.ebp;*/
 	asm volatile ("movl %%esp,%0" : "=r"(console.cpu.esp));
-	asm volatile("movl %%ebp,%0" : "=r"(console.cpu.ebp));
+	asm volatile ("movl %%ebp,%0" : "=r"(console.cpu.ebp));
 
 
 	
-	
+
 
 	// save resume point: we will resume at forward label 1 (below)
 	asm volatile ("movl $1f,%0" : "=r"(console.cpu.eip));
@@ -77,8 +77,10 @@ void run(uint32_t LBA, uint32_t n_sectors) {
 	user_program.memory_base = *load_base;
 	user_program.memory_limit = bytes_needed;
 
+	sys_printf("%d", user_program.cpu.esp);
 	asm volatile ("movl %%ss,%0" : "=r"(user_program.cpu.ss));
 	user_program.cpu.esp = (*load_base + bytes_needed) - 4096;
+//	asm volatile ("movl %%esp,%0" : "=r"(user_program.cpu.esp));
     asm volatile ("movl %%cs,%0" : "=r"(user_program.cpu.cs));
     asm volatile ("1: movl $1b, %0" : "=r" (user_program.cpu.eip));
     asm volatile ("pushfl\n");
@@ -185,6 +187,7 @@ __attribute__((fastcall)) void switch_to_user_process(PCB *p) {
 
 	// TODO: load EDI, ESI, EAX, EBX, EDX, EBP with values from
     	// process p's PCB
+
 	asm volatile ("movl %0, %%edi\n": :"m"(p->cpu.edi));
 	asm volatile ("movl %0, %%esi\n": :"m"(p->cpu.esi));
 	asm volatile ("movl %0, %%eax\n": :"m"(p->cpu.eax));
