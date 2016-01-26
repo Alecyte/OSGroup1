@@ -41,24 +41,17 @@ void run(uint32_t LBA, uint32_t n_sectors) {
     	// so that we return back here; the PCB of the console is defined
     	// in the beginning of this file; the PCB structure is defined in
     	// kernel_only.h.
-    puts("hey\n");
 	// TODO: Save flags in the console's PCB
 	
 	/* console.cpu.eflags = current_process->cpu.eflags; */
-	
+	//Push the flags on the stack and then pop it into the eflags
 	asm volatile("pushfl\n");	
 	asm volatile("popl %0\n": "=r"(console.cpu.eflags));
 	
 	// TODO: Save current stack pointers (ESP and EBP) in the console's PCB
-
-	/*console.cpu.esp = current_process->cpu.esp;
-	console.cpu.ebp = current_process->cpu.ebp;*/
+	//Move the esp and ebp from the registers into the PCB
 	asm volatile ("movl %%esp,%0" : "=r"(console.cpu.esp));
 	asm volatile("movl %%ebp,%0" : "=r"(console.cpu.ebp));
-
-
-	
-	
 
 	// save resume point: we will resume at forward label 1 (below)
 	asm volatile ("movl $1f,%0" : "=r"(console.cpu.eip));
@@ -74,23 +67,26 @@ void run(uint32_t LBA, uint32_t n_sectors) {
     	//          f) instruction pointer (EIP)
     	//          g) flags (EFLAGS)
 
-	user_program.memory_base = *load_base;
-	user_program.memory_limit = bytes_needed;
+	//The memory base is the load base
+	user_program.memory_base = (uint32_t)load_base;
 
-	asm volatile ("movl %%ss,%0" : "=r"(user_program.cpu.ss));
-	user_program.cpu.esp = (*load_base + bytes_needed) - 4096;
-    asm volatile ("movl %%cs,%0" : "=r"(user_program.cpu.cs));
-    asm volatile ("1: movl $1b, %0" : "=r" (user_program.cpu.eip));
-    asm volatile ("pushfl\n");
-    asm volatile ("popl %0\n": "=r"(user_program.cpu.eflags));
+	//The memory limit is the bytes needed -1
+	user_program.memory_limit = bytes_needed - 1;
+	
+	//The esp is the memory limit - 4kb
+	user_program.cpu.esp = (bytes_needed - 1 - 4096);
 
-	/*user_program.memory_base = current_process->memory_base;
-	user_program.memory_limit = current_process->memory_limit;
-	user_program.cpu.ss = current_process->cpu.ss;
-	user_program.cpu.esp = current_process->cpu.esp;
-	user_program.cpu.cs = current_process->cpu.cs;
-	user_program.cpu.cs = current_process->cpu.eip;
-	user_program.cpu.cs = current_process->cpu.eflags;*/
+	//Refer to canvas discussions, gdt shifted by 3
+	user_program.cpu.cs = 0x1b;
+
+	//The eip starts at 0
+	user_program.cpu.eip = 0x0;
+
+	//Refer to canvas discussions, place of gdt shifted by 3
+	user_program.cpu.ss = 0x23;
+
+	//The eflags is also not set
+	user_program.cpu.eflags = 0x0;
 
 	current_process = &user_program;
 	switch_to_user_process(current_process);
@@ -136,47 +132,32 @@ __attribute__((fastcall)) void switch_to_user_process(PCB *p) {
 	// we will use the last 4KB of the process address space
 	TSS.ss0 = 0x10; // must be kernel data segment with RPL=0
     	// TODO: set TSS.esp0 
-	TSS.esp0 = p->cpu.esp;
+	TSS.esp0 = (p->memory_limit + p->memory_base);
 
 	// set up GDT entries 3 and 4
 	// TODO: set user GDT code/data segment to base = p->memory_base,
 	// limit = p->memory_limit, flag, and access byte (see kernel_only.h
     	// for definition of the GDT structure)
 
-	uint32_t temo = (p->memory_base << 16);
-	gdt[3].base_0_15 = (temo >> 16 );
-	uint32_t baseMask2 = (0x00FF0000u);
-	gdt[3].base_16_23 = ((p->memory_base & baseMask2) >> 16);
-	uint32_t baseMask3 = (0xFF000000u);
-	gdt[3].base_24_31 = ((p->memory_base & baseMask3) >> 24);
-	uint32_t tempLimit = (p->memory_limit << 16);
-	gdt[3].limit_0_15 = (tempLimit >> 16);
-	//uint8_t flagMask = (0x0F);
-	//uint8_t tempFlag = ((flagMask & p->flag) << 4);
-	uint32_t limitMask2 = (0xF0000u);
-	uint8_t tempLimit2 = ((limitMask2 & p->memory_limit) >> 16);
-	gdt[3].limit_and_flag = (0xC| tempLimit2) ;
+	//Usual masking and stuff
+	gdt[3].base_0_15 = p->memory_base & 0xFFFF;
+	gdt[3].base_16_23 = (p->memory_base >> 16) & 0xFF;
+	gdt[3].base_24_31 = (p->memory_base >> 24) & 0xFF;
+	gdt[3].limit_0_15 = p->memory_limit & 0xFFFF;
+	gdt[3].limit_and_flag = (uint8_t)((p->memory_limit >> 16) & 0x0F) | 0x40;
+	//Refer to kernelonly.h
 	gdt[3].access_byte = (0xFA);
 
-
-	uint32_t temoRE = (p->memory_base << 16);
-	gdt[4].base_0_15 = (temoRE >> 16 );
-	uint32_t baseMask2RE = (0x00FF0000u);
-	gdt[4].base_16_23 = ((p->memory_base & baseMask2RE) >> 16);
-	uint32_t baseMask3RE = (0xFF000000u);
-	gdt[4].base_24_31 = ((p->memory_base & baseMask3RE) >> 24);
-	uint32_t tempLimitRE = (p->memory_limit << 16);
-	gdt[4].limit_0_15 = (tempLimitRE >> 16);
-	//uint8_t flagMaskRE = (0x0F);
-	//uint8_t tempFlagRE = ((flagMaskRE & p->flag) << 4);
-	uint32_t limitMask2RE = (0xF0000u);
-
-	uint8_t tempLimit2RE = ((limitMask2RE & p->memory_limit) >> 16);
-	gdt[4].limit_and_flag = (0xC | tempLimit2RE) ;
+	gdt[4].base_0_15 = p->memory_base & 0xFFFF;
+	gdt[4].base_16_23 = (p->memory_base >> 16) & 0xFF;
+	gdt[4].base_24_31 = (p->memory_base >> 24) & 0xFF;
+	gdt[4].limit_0_15 = p->memory_limit & 0xFFFF;
+	gdt[4].limit_and_flag = (uint8_t)((p->memory_limit >> 16) & 0x0F) | 0x40;
+	//Rfer to kernelonly.h
 	gdt[4].access_byte = (0xF2);
 
 
-//print what we expect to be in there & check what is
+	//print what we expect to be in there & check what is
 	//sys_printf ->prints to console
 	//include lib.h
 	//print gdt entries as well
@@ -185,36 +166,44 @@ __attribute__((fastcall)) void switch_to_user_process(PCB *p) {
 
 	// TODO: load EDI, ESI, EAX, EBX, EDX, EBP with values from
     	// process p's PCB
+	
 	asm volatile ("movl %0, %%edi\n": :"m"(p->cpu.edi));
 	asm volatile ("movl %0, %%esi\n": :"m"(p->cpu.esi));
+	asm volatile ("movl %0, %%ebp\n": :"m"(p->cpu.ebp));
 	asm volatile ("movl %0, %%eax\n": :"m"(p->cpu.eax));
 	asm volatile ("movl %0, %%ebx\n": :"m"(p->cpu.ebx));
 	asm volatile ("movl %0, %%edx\n": :"m"(p->cpu.edx));
-	asm volatile ("movl %0, %%ebp\n": :"m"(p->cpu.ebp));
 
-
-    
+    	
 	// TODO: Push into stack the following values from process p's PCB: 
     	// SS, ESP, EFLAGS, CS, EIP (in this order)
-	asm volatile ("pushl %0\n": :"m"(p->cpu.ss));
-	asm volatile ("pushl %0\n": :"m"(p->cpu.esp));
-	asm volatile ("pushl %0\n": :"m"(p->cpu.eflags));
-	asm volatile ("pushl %0\n": :"m"(p->cpu.cs));
-	asm volatile ("pushl %0\n": :"m"(p->cpu.eip));
 
-
+	asm volatile ("push %0\n": :"m"(p->cpu.ss));
+	asm volatile ("push %0\n": :"m"(p->cpu.esp));
+	//asm volatile ("push %0\n": :"m"(p->cpu.eflags));
+	//Use the push flags command instead of push and then eflags.
+	asm volatile("pushfl\n");
+	asm volatile ("push %0\n": :"m"(p->cpu.cs));
+	asm volatile ("push %0\n": :"m"(p->cpu.eip));
+	
+	
 	// TODO: load ECX with value from process p's PCB
-	asm volatile ("movl %0, %%ecx\n": :"m"(p->cpu.ecx));
 
-		// TODO: execute the IRETL instruction (was last)
-
-	asm volatile ("IRETL\n");
+	// TODO: execute the IRETL instruction (was last)
 
 	// TODO: load ES, DS, FS, GS registers with user data segment selector
-	asm volatile ("movw %0, %%es\n": :"m"(TSS.ss0));
-	asm volatile ("movw %0, %%ds\n": :"m"(TSS.ss0));
-	asm volatile ("movw %0, %%fs\n": :"m"(TSS.ss0));
-	asm volatile ("movw %0, %%gs\n": :"m"(TSS.ss0));
+
+	asm volatile ("mov %0, %%es\n": :"m"(p->cpu.ss));
+	asm volatile ("mov %0, %%ds\n": :"m"(p->cpu.ss));
+	asm volatile ("mov %0, %%fs\n": :"m"(p->cpu.ss));
+	asm volatile ("mov %0, %%gs\n": :"m"(p->cpu.ss));
+
+	//Move the ecx command here or everything crashes.
+	asm volatile ("movl %0, %%ecx\n": :"m"(p->cpu.ecx));
+
+	
+	asm volatile ("iretl\n");
+	
 
 
 
