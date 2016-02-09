@@ -67,11 +67,23 @@ PCB *remove_from_processq(PCB *p) {
 	// TODO: remove process p from the process queue
 
 	// TODO: free the memory used by process p's image
+	PCB *temp = processq_next;
+	while(temp->next_PCB != p)
+	{
+		temp = temp->next_PCB;	
 
+	}
+	PCB *tempAfterP = p->next_PCB;
+	temp->next_PCB->next_PCB = tempAfterP; //p->next_PCB;
+	tempAfterP->prev_PCB = temp;
 	// TODO: free the memory used by the PCB
-
-	// TODO: return pointer to next process in list
+	
+	//COME BAXK AND FREE P
+	//!!!!!!!!!!!!!!!!!!
+		// TODO: return pointer to next process in list
+	return tempAfterP;
 }
+
 
 /*** Schedule a process ***/
 // This function is called whenever a scheduling decision is needed,
