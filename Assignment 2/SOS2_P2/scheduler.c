@@ -130,6 +130,8 @@ void schedule_something() { // no interruption when here
 			{
 				if(temp->state == READY)
 				{
+					temp->state = RUNNING;
+					current_process = temp;
 					switch_to_user_process(temp);
 				}
 				temp = temp->next_PCB;
