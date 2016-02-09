@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# This shell script will create a zip file containing everything
+# in your directory needed to build the code with your modifications.
+# It will omit build output files (.o, .out, .bin, and .dsk) and editor
+# backup files (files ending in ~).  The zip file will be placed on
+# your Desktop, with a name containing the date and time when this
+# shell script was run.
+
+zipdir="$(basename "$PWD")"
+dest=${HOME}/Desktop
+output_file="${dest}/${zipdir}_$(date '+%Y-%m-%d-%H-%M-%S').zip"
+
+echo "Archiving a copy of your directory"
+echo "    from ${PWD}"
+echo "    to   ${output_file}"
+( cd .. ; zip -r9 "${output_file}" "$zipdir" --exclude '*/build/*.o' '*.out' '*.bin' '*.dsk' '*~' )
+
