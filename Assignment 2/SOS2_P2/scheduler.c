@@ -91,7 +91,49 @@ PCB *remove_from_processq(PCB *p) {
 void schedule_something() { // no interruption when here
 
 	// TODO: see assignment background material on what this function should do 
+	//if(state.TERMINATED)
 
+	PCB *temp = processq_next;
+			while(temp->next_PCB != processq_next)
+			{
+				if(temp->state == TERMINATED)
+				{
+					temp = remove_from_processq(temp);
+
+				}
+				temp = temp->next_PCB;
+
+			}
+			temp = processq_next;
+			//uint32_t gimmeTime;
+				//PCB *temp = processq_next;
+			while(temp->next_PCB != processq_next)
+			{
+				if(temp->state == WAITING)
+				{
+					if(get_epochs()> temp->sleep_end)
+					{
+						temp->state = READY;
+
+					}
+					
+
+				}
+				temp = temp->next_PCB;
+
+			}	
+
+			temp = processq_next;
+			//uint32_t gimmeTime;
+				//PCB *temp = processq_next;
+			while(temp->next_PCB != processq_next)
+			{
+				if(temp->state == READY)
+				{
+					switch_to_user_process(temp);
+				}
+				temp = temp->next_PCB;
+			}	
 	// TODO: comment the following when you start working on this function
 	switch_to_kernel_process(&console);
 }
