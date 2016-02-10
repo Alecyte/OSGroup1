@@ -68,11 +68,11 @@ PCB *remove_from_processq(PCB *p) {
 
 	// TODO: free the memory used by process p's image
 	PCB *temp = processq_next;
-	while(temp->next_PCB != p)
-	{
-		temp = temp->next_PCB;	
+	// while(temp->next_PCB != p)
+	// {
+	// 	temp = temp->next_PCB;	
 
-	}
+	// }
 	PCB *tempAfterP = p->next_PCB;
 	temp->next_PCB->next_PCB = tempAfterP; //p->next_PCB;
 	tempAfterP->prev_PCB = temp;
