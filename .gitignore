@@ -1,2 +1,8 @@
 SOS.dsk
 *.o
+*.sh
+*.dsk
+*.vmdk
+*.bin
+*.out
+*.log

@@ -76,6 +76,9 @@ PCB *remove_from_processq(PCB *p) {
 	PCB *tempAfterP = p->next_PCB;
 	temp->next_PCB->next_PCB = tempAfterP; //p->next_PCB;
 	tempAfterP->prev_PCB = temp;
+	//dealloc_memory(tempAfterP);
+	//dealloc_memory((void*)p->memory_base);
+	//dealloc_memory(p);
 	// TODO: free the memory used by the PCB
 	
 	//COME BAXK AND FREE P
