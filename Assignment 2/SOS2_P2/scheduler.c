@@ -72,9 +72,9 @@ PCB *add_to_processq(PCB *p) {
 PCB *remove_from_processq(PCB *p) {
 	// TODO: remove process p from the process queue
 	//if(processq_next == NULL)
-	{
+	//{
 	//	return NULL;
-	}
+	//}
 	//else
 	{
 
@@ -92,8 +92,8 @@ PCB *remove_from_processq(PCB *p) {
 	p->next_PCB = NULL;
 	p->prev_PCB = NULL;
 
-	dealloc_memory(tempAfterP);
-	dealloc_memory((void*)p->memory_base);
+	//dealloc_memory(tempAfterP);
+	dealloc_memory((void*)p->memory_base); //not a pointer itself
 	dealloc_memory(p);
 	// TODO: free the memory used by the PCB
 	
