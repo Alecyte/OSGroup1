@@ -24,10 +24,11 @@ PCB *add_to_processq(PCB *p) {
 	disable_interrupts();
 
 	//check if empty	
-		if(processq_next == NULL)//&& processq_next.prev_PCB == NULL)
+		if(processq_next == NULL) //&& processq_next->prev_PCB == NULL)
 		{
 			processq_next = p;
 			//processq_next->next_PCB = p;
+
 			p->next_PCB = p;
 			p->prev_PCB = p;
 			
@@ -35,18 +36,23 @@ PCB *add_to_processq(PCB *p) {
 		}
 		else
 		{
-			p->next_PCB = processq_next;
 			//make tempHead
 			PCB *temp = processq_next;
-			while(temp->next_PCB != processq_next)
-			{
-				temp = temp->next_PCB;	
-			}	
-			p->prev_PCB = temp;
-			temp->next_PCB = p;
+			p->next_PCB = temp;
+			p->prev_PCB = temp->prev_PCB;
+			p->prev_PCB->next_PCB = p;
+			temp->prev_PCB = p;
+
+	//		while(temp->next_PCB != processq_next)
+	//		{
+	//			temp = temp->next_PCB;	
+	//		}	
+	//		p->prev_PCB = temp;
+	//		temp->next_PCB = p;
 
 		}
-	
+	//next prev to p
+		//
 
 	// TODO: add process p to the queue of processes, always 
 	// maintained as a circular doubly linked list;
@@ -65,26 +71,37 @@ PCB *add_to_processq(PCB *p) {
 // Returns pointer to the next process in process queue
 PCB *remove_from_processq(PCB *p) {
 	// TODO: remove process p from the process queue
+	//if(processq_next == NULL)
+	{
+	//	return NULL;
+	}
+	//else
+	{
+
 
 	// TODO: free the memory used by process p's image
-	PCB *temp = processq_next;
+	//PCB *temp = processq_next;
 	// while(temp->next_PCB != p)
-	// {
-	// 	temp = temp->next_PCB;	
+	 {
+	 //	temp = temp->next_PCB;	
 
-	// }
+	 }
 	PCB *tempAfterP = p->next_PCB;
-	temp->next_PCB->next_PCB = tempAfterP; //p->next_PCB;
-	tempAfterP->prev_PCB = temp;
-	//dealloc_memory(tempAfterP);
-	//dealloc_memory((void*)p->memory_base);
-	//dealloc_memory(p);
+	tempAfterP->prev_PCB = p->prev_PCB; //p->next_PCB;
+	tempAfterP->prev_PCB->prev_PCB->next_PCB = tempAfterP;
+	p->next_PCB = NULL;
+	p->prev_PCB = NULL;
+
+	dealloc_memory(tempAfterP);
+	dealloc_memory((void*)p->memory_base);
+	dealloc_memory(p);
 	// TODO: free the memory used by the PCB
 	
 	//COME BAXK AND FREE P
 	//!!!!!!!!!!!!!!!!!!
 		// TODO: return pointer to next process in list
 	return tempAfterP;
+	}
 }
 
 
