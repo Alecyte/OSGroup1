@@ -91,7 +91,7 @@ PCB *remove_from_processq(PCB *p) {
 		// TODO: return pointer to next process in list
 	return tempAfterP;
 	}
-}
+
 
 
 /*** Schedule a process ***/
@@ -122,7 +122,7 @@ void schedule_something() { // no interruption when here
 				}
 				temp = temp->next_PCB;
 
-			} while(temp->next_PCB != processq_next)
+			} while(temp->next_PCB != processq_next);
 			
 
 
@@ -148,7 +148,7 @@ void schedule_something() { // no interruption when here
 				}
 
 				temp = temp->next_PCB;
-			}while(temp->next_PCB != processq_next)	
+			}while(temp->next_PCB != processq_next);	
 	// TODO: comment the following when you start working on this function
 	switch_to_kernel_process(&console);
 }
