@@ -38,17 +38,12 @@ PCB *add_to_processq(PCB *p) {
 		{
 			//make tempHead
 			PCB *temp = processq_next;
+			PCB *tail = temp->prev_PCB;
 			p->next_PCB = temp;
-			p->prev_PCB = temp->prev_PCB;
-			p->prev_PCB->next_PCB = p;
 			temp->prev_PCB = p;
-
-	//		while(temp->next_PCB != processq_next)
-	//		{
-	//			temp = temp->next_PCB;	
-	//		}	
-	//		p->prev_PCB = temp;
-	//		temp->next_PCB = p;
+			p->prev_PCB = tail;
+			tail->next_PCB = p;
+			
 
 		}
 	//next prev to p
@@ -77,11 +72,12 @@ PCB *remove_from_processq(PCB *p) {
 
 	PCB *tempAfterP = p->next_PCB;
 	tempAfterP->prev_PCB = p->prev_PCB; //p->next_PCB;
-	tempAfterP->prev_PCB->prev_PCB->next_PCB = tempAfterP;
+	//tempAfterP->prev_PCB->prev_PCB->next_PCB = tempAfterP;
+	tempAfterP->prev_PCB->next_PCB = tempAfterP;
 	p->next_PCB = NULL;
 	p->prev_PCB = NULL;
 
-	//dealloc_memory(tempAfterP);
+//	dealloc_memory(tempAfterP);
 	dealloc_memory((void*)p->memory_base); //not a pointer itself
 	dealloc_memory(p);
 	// TODO: free the memory used by the PCB
@@ -100,14 +96,16 @@ PCB *remove_from_processq(PCB *p) {
 void schedule_something() { // no interruption when here
 
 	// TODO: see assignment background material on what this function should do 
-	//if(state.TERMINATED)
 
 	PCB *temp = processq_next;
 
+	if(get_epochs() % 2 == 0)
+			{
+		//		printf("even\n");
 			do
 			{
 
-			if(temp->state == WAITING && get_epochs() > temp->sleep_end)
+			if(temp->state == WAITING && get_epochs() >= temp->sleep_end)
 				{
 					
 						temp->state = READY;
@@ -117,40 +115,50 @@ void schedule_something() { // no interruption when here
 			
 				if(temp->state == TERMINATED)
 				{
-					temp = remove_from_processq(temp);
+					PCB *oneRemoved = temp;
+					temp = remove_from_processq(oneRemoved);
 
 				}
 				temp = temp->next_PCB;
 
-			} while(temp->next_PCB != processq_next);
-			
+			} while(temp != processq_next);
 
+			do
+			{
+				//50% of time, get_eplapced % 2 == 0
+					if(temp->state == READY)
+					{
+						temp->state = RUNNING;
+						processq_next = temp->next_PCB;
+						current_process = temp;
+						switch_to_user_process(temp);
+					}
+
+
+				temp = temp->next_PCB;
+
+			} while(temp != processq_next);
+
+	
+	}		
 
 		
+
 		//	temp = processq_next;
 			//uint32_t gimmeTime;
 				//PCB *temp = processq_next;
 			
 			//check if kernel process->switch to user (loop through list until find ready process)
 			//if user->switch to kernel 
-			do
-			{
 			
-					if(temp->state == READY)
-					{
-						temp->state = RUNNING;
-						current_process = temp;
-						switch_to_user_process(temp);
-					}
-				else
-				{
+			/*else 
+			{
+			switch_to_kernel_process(&console);
 
-				}
-
-				temp = temp->next_PCB;
-			}while(temp->next_PCB != processq_next);	
+	
+		}*/	
+			switch_to_kernel_process(&console);
 	// TODO: comment the following when you start working on this function
-	switch_to_kernel_process(&console);
 }
 
 /*** Switch to kernel process described by the PCB ***/
