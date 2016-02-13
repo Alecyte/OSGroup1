@@ -77,10 +77,11 @@ PCB *remove_from_processq(PCB *p) {
 //	p->next_PCB = NULL;
 //	p->prev_PCB = NULL;
 
-	
+	PCB *ret = p->prev_PCB;
 	if(p->next_PCB == p)//check if p not only process in list
 	{
 		processq_next = NULL;
+		ret = NULL;
 	}
 	else if(processq_next == p)
 	{
@@ -88,13 +89,16 @@ PCB *remove_from_processq(PCB *p) {
 		head->prev_PCB = tail; //p->next_PCB;
 		//tempAfterP->prev_PCB->prev_PCB->next_PCB = tempAfterP;
 		tail->next_PCB = head;
+		ret = processq_next;
 		//head->prev_PCB->next_PCB = head;
 	}
 	else
 	{
+		//processq_next = head;
 		head->prev_PCB = tail; //p->next_PCB;
 		//tempAfterP->prev_PCB->prev_PCB->next_PCB = tempAfterP;
 		tail->next_PCB = head;
+		ret = head;
 		//head->prev_PCB->next_PCB = head;
 	}
 //	dealloc_memory(tempAfterP);
@@ -105,7 +109,8 @@ PCB *remove_from_processq(PCB *p) {
 	//COME BAXK AND FREE P
 	//!!!!!!!!!!!!!!!!!!
 		// TODO: return pointer to next process in list
-	return processq_next;
+	//return processq_next;
+	return ret;
 }
 
 
@@ -171,7 +176,7 @@ void schedule_something() { // no interruption when here
 				processq_next = processq_next->next_PCB;
 
 			} while(processq_next != temp);
-			
+
 			if (processq_next == temp)
 			{
 				current_process = &console;
@@ -187,7 +192,6 @@ void schedule_something() { // no interruption when here
 	{
 		current_process = &console;
 					//switch_to_user_process(temp);
-		
 		switch_to_kernel_process(current_process);
 
 
