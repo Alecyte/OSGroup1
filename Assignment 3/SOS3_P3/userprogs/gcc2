@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# We will create an executable with the following properties:
+#  1) Everything needed to run the program is in the executable  
+#     (no dynamic libraries).
+#  2) Any library that you did not write with SOS in mind must 
+#     not be used. They may depend on system calls that SOS 
+#     does not provide. Only use the included lib.c and lib.h.
+#  3) The output will be a pure binary file; so there is no way
+#     of knowing where to begin execution. The first instruction is
+#     what we choose. This means the code (text) section of the
+#     executable must be at virtual address 0x0.
+#  4) main() will return to a few lines of prologue code that calls
+#     interrupt 0xFF to notify kernel of program end (simple way
+#     to get back to kernel mode)
+ 
+echo -e ".globl _start\n\n_start: call main\nint \$0xFF" > prologue.S
+gcc -static -s -nostdinc -nostdlib -fno-builtin-fprintf -fno-builtin-printf -Wl,--oformat=binary -Ttext=0 -e0 prologue.S ../lib.c $@
+rm prologue.S
