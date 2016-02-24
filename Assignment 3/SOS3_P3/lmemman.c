@@ -27,7 +27,7 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	// 1) calculate the number of frames necessary for program code,
 	//    user-mode stack and kernel-mode stack
 
-	uint32_t kernelPages = 4096/4096;//1KB
+	/*uint32_t kernelPages = 4096/4096;//1KB
 	uint32_t userPages = 12288/4096;//12KB/4KB
 	uint32_t codePages;
 	if(code_size<4096)
@@ -83,7 +83,7 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	p->mem.start_brk = codePages * 4096;
 	p->mem.brk = p->mem.start_brk;
 	p->mem.start_stack = 0xBFBFEFFF;
-	p->mem.page_directory = k_page_directory;
+	p->mem.page_directory = k_page_directory;*/
 	//alloc_frames(kernelStack, KERNEL_ALLOC);
 	//alloc_frames(userStack, USER_ALLOC);
 	//alloc_frames(code, USER_ALLOC);
@@ -108,7 +108,27 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 
 	// TODO: uncomment following line when you start working in 
 	//        this function
+	alloc_kernel_pages(1);
+	alloc_user_pages(4,0,k_page_directory, PDE_READ_WRITE);
 
+	uint32_t kernelPages = 4096/4096;//1KB
+	uint32_t userPages = 12288/4096;//12KB/4KB
+	uint32_t codePages;
+	if(code_size<4096)
+	{
+		codePages = 1;
+	}
+	else
+	{
+		codePages = code_size/4096;
+	}
+
+
+	p->mem.start_code = 0x0;
+	p->mem.start_brk = codePages * 4096;
+	p->mem.brk = p->mem.start_brk;
+	p->mem.start_stack =(4096*3);
+	p->mem.page_directory = k_page_directory;
 	return TRUE;
 }
 
