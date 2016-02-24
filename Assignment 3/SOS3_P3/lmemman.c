@@ -39,11 +39,6 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 		codePages = code_size/4096;
 	}
 	 
-
-	//uint32_t kernelStack = 4096/4096;
-	//uint32_t userStack = 12288/4096;
-	//uint32_t code = code_size/4096;
-
 	// 2) allocate frames for above
 	
 	//uint32_t n_pages, uint32_t base, PDE *page_directory, uint32_t mode
@@ -62,9 +57,7 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	else{
 		sys_printf("The code number is : %d\n", retCode);
 	}	
-	//uint32_t kernelStack = 4096/4096;
-	//uint32_t userStack = 12288/4096;
-	//uint32_t code = code_size/4096;
+	
 	//sys_printf("retCode is: %d\n", retCode);
 	//sys_printf("codePages is: %d\n",codePages);
 	//stack starts @ 
@@ -74,7 +67,14 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 		return FALSE;
 	}
 	else{
-		sys_printf("The stack number is : %d\n", retStack);
+		sys_printf("The retStack number is : %d\n", retStack);
+	}
+	uint32_t kerStack = (uint32_t)alloc_user_pages(1, 0xBFBFF000, k_page_directory, PDE_READ_WRITE);
+	if(kerStack == NULL){
+		return FALSE;
+	}
+	else{
+		sys_printf("The kerStack number is : %d\n", kerStack);
 	}
 //	init_kernel_pages();
 
@@ -169,6 +169,7 @@ void *alloc_kernel_pages(uint32_t n_pages) {
 // if necessary
 void *alloc_user_pages(uint32_t n_pages, uint32_t base, PDE *page_directory, uint32_t mode) { 
 	// some sanity check
+	uint32_t initBase = base; //sanity check - see if the parameter base was initially zero
 	if (base & 0x00000FFF != 0 || 			// base not 4KB aligned
 	    base >= KERNEL_BASE ||			// base encroaching on kernel address space
 	    (KERNEL_BASE - base)/4096 < n_pages ||	// some pages on kernel address space
@@ -241,7 +242,12 @@ void *alloc_user_pages(uint32_t n_pages, uint32_t base, PDE *page_directory, uin
 	// fill-zero the memory area
 	zero_out_pages((void *)base, n_pages);
 	sys_printf("base in alloc %d\n",base);
-	base = 1;
+	if(initBase == 0)
+	{
+
+		base = 1;
+	}
+
 	return (void *)base; 
 }
 
