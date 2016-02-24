@@ -21,26 +21,42 @@ PTE *pages_768 = (PTE *)(0xC0102000);
 // program from disk to memory (done in scheduler.c)
 
 bool init_logical_memory(PCB *p, uint32_t code_size) {
-
+	//sys_printf("yo dawg\n");
 	// TODO: see background material on what this function should
 	// do. High-level objectives are:
 	// 1) calculate the number of frames necessary for program code,
 	//    user-mode stack and kernel-mode stack
 
-	uint32_t kernelPages = 4096/4096;
-	uint32_t userPages = 12288/4096;
-	uint32_t codePages = code_size/4096;
+	uint32_t kernelPages = 4096/4096;//1KB
+	uint32_t userPages = 12288/4096;//12KB/4KB
+	uint32_t codePages;
+	if(code_size<4096)
+	{
+		codePages = 1;
+	}
+	else
+	{
+		codePages = code_size/4096;
+	}
+	 
+
 	//uint32_t kernelStack = 4096/4096;
 	//uint32_t userStack = 12288/4096;
 	//uint32_t code = code_size/4096;
 
 	// 2) allocate frames for above
-
+	
 	//uint32_t n_pages, uint32_t base, PDE *page_directory, uint32_t mode
-
+	//sys_printf("before alloc kern\n");
 	alloc_kernel_pages(kernelPages);
-	uint32_t retCode = alloc_user_pages(codePages, 0, k_page_directory, PDE_READ_WRITE);
+	//sys_printf("successzzzz\n");
+	//READ+WRITE
+	//sys_printf("code_size %d\n",code_size);
+	//process code @ zero - SOS internals
+	uint32_t retCode = (uint32_t)alloc_user_pages(codePages, 0, k_page_directory, PDE_READ_WRITE);
+	sys_printf("retCode : %d\n", retCode);
 	if(retCode == NULL){
+		sys_printf("retCode false\n");
 		return FALSE;
 	}
 	else{
@@ -49,20 +65,24 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	//uint32_t kernelStack = 4096/4096;
 	//uint32_t userStack = 12288/4096;
 	//uint32_t code = code_size/4096;
-	uint32_t retStack = alloc_user_pages(userPages, (retCode + codePages * 4096), k_page_directory, PDE_READ_WRITE);
+	//sys_printf("retCode is: %d\n", retCode);
+	//sys_printf("codePages is: %d\n",codePages);
+	//stack starts @ 
+	//0xBFBFC000
+	uint32_t retStack = (uint32_t)alloc_user_pages(userPages, 0xBFBFC000, k_page_directory, PDE_READ_WRITE);
 	if(retStack == NULL){
 		return FALSE;
 	}
 	else{
 		sys_printf("The stack number is : %d\n", retStack);
 	}
-	init_kernel_pages();
+//	init_kernel_pages();
 
 	p->mem.start_code = 0x0;
-	p->mem.start_code = codePages * 4096;
-	p->mem.start_brk = p->mem.start_code;
-	p->mem.brk = p->mem.start_code;
-	p->mem.start_stack = (codePages * 4096) + (userPages * 4096);
+	//p->mem.start_code = codePages * 4096;
+	p->mem.start_brk = codePages * 4096;
+	p->mem.brk = p->mem.start_brk;
+	p->mem.start_stack = 0xBFBFEFFF;
 	p->mem.page_directory = k_page_directory;
 	//alloc_frames(kernelStack, KERNEL_ALLOC);
 	//alloc_frames(userStack, USER_ALLOC);
@@ -152,14 +172,22 @@ void *alloc_user_pages(uint32_t n_pages, uint32_t base, PDE *page_directory, uin
 	if (base & 0x00000FFF != 0 || 			// base not 4KB aligned
 	    base >= KERNEL_BASE ||			// base encroaching on kernel address space
 	    (KERNEL_BASE - base)/4096 < n_pages ||	// some pages on kernel address space
-	    n_pages == 0) return NULL; 
+	    n_pages == 0)
+	{
+	    sys_printf("first null in alloc user\n"); 
+	    return NULL; 
+	}
 
 	int i;
-
+	sys_printf("we are getting past the first null\n");
 	// allocate frames for the requested pages
 	uint32_t user_frames = (uint32_t)alloc_frames(n_pages, USER_ALLOC);
-	if (user_frames==NULL) return NULL;
+	if (user_frames==NULL) {
+		sys_printf("second null in alloc user\n");
+		return NULL;
+	}
 
+	sys_printf("we are getting past the second null\n");
 	// how many new page tables we may need; some may be returned
 	uint32_t n_pde = n_pages / 1024; // one page table maps 1024 pages 
 	if (n_pages % 1024 != 0) n_pde++;
@@ -168,10 +196,11 @@ void *alloc_user_pages(uint32_t n_pages, uint32_t base, PDE *page_directory, uin
 	uint32_t pt_frames = (uint32_t)alloc_frames(n_pde, KERNEL_ALLOC);
 	uint32_t pt_frames_used = 0; // we will track how many are used
 	if (pt_frames == NULL) {
-		dealloc_frames((void *)user_frames,n_pages);		
+		dealloc_frames((void *)user_frames,n_pages);	
+		sys_printf("third null in allo user\n");	
 		return NULL;
 	}
-	
+
 	// set up page directory and page tables
 	PTE *l_pages; 
 	uint32_t pd_entry = base >> 22; // start from this page directory entry
@@ -211,7 +240,8 @@ void *alloc_user_pages(uint32_t n_pages, uint32_t base, PDE *page_directory, uin
 		
 	// fill-zero the memory area
 	zero_out_pages((void *)base, n_pages);
-
+	sys_printf("base in alloc %d\n",base);
+	base = 1;
 	return (void *)base; 
 }
 
