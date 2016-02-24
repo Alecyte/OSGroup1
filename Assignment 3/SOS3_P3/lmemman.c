@@ -22,18 +22,39 @@ PTE *pages_768 = (PTE *)(0xC0102000);
 
 bool init_logical_memory(PCB *p, uint32_t code_size) {
 
+	// TODO: see background material on what this function should
+	// do. High-level objectives are:
+	// 1) calculate the number of frames necessary for program code,
+	//    user-mode stack and kernel-mode stack
 
 	uint32_t kernelPages = 4096/4096;
 	uint32_t userPages = 12288/4096;
 	uint32_t codePages = code_size/4096;
+	//uint32_t kernelStack = 4096/4096;
+	//uint32_t userStack = 12288/4096;
+	//uint32_t code = code_size/4096;
+
+	// 2) allocate frames for above
+
+	//uint32_t n_pages, uint32_t base, PDE *page_directory, uint32_t mode
+
 	alloc_kernel_pages(kernelPages);
 	uint32_t retCode = alloc_user_pages(codePages, 0, k_page_directory, PDE_READ_WRITE);
 	if(retCode == NULL){
 		return FALSE;
 	}
+	else{
+		sys_printf("The code number is : %d\n", retCode);
+	}	
+	//uint32_t kernelStack = 4096/4096;
+	//uint32_t userStack = 12288/4096;
+	//uint32_t code = code_size/4096;
 	uint32_t retStack = alloc_user_pages(userPages, (retCode + codePages * 4096), k_page_directory, PDE_READ_WRITE);
 	if(retStack == NULL){
 		return FALSE;
+	}
+	else{
+		sys_printf("The stack number is : %d\n", retStack);
 	}
 	init_kernel_pages();
 
@@ -43,21 +64,24 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	p->mem.brk = p->mem.start_code;
 	p->mem.start_stack = (codePages * 4096) + (userPages * 4096);
 	p->mem.page_directory = k_page_directory;
+	//alloc_frames(kernelStack, KERNEL_ALLOC);
+	//alloc_frames(userStack, USER_ALLOC);
+	//alloc_frames(code, USER_ALLOC);
 
-	return TRUE;
-	// TODO: see background material on what this function should
-	// do. High-level objectives are:
-	// 1) calculate the number of frames necessary for program code,
-	//    user-mode stack and kernel-mode stack
-	// 2) allocate frames for above
 	// 3) determine beginning physical address of program code,
 	//    user-mode stack and kernel-mode stack
+
+
 	// 4) calculate the number of frames necessary for page directory
 	//    and page tables
+
 	// 5) allocate frames for above
+
 	// 6) set up page directory and page tables
+
 	// 7) set mem struct in PCB: start_code, end_code, start_stack,
 	//    start_brk, brk, and page_directory
+
 	// Return value: TRUE if everything goes well; FALSE if allocation
 	//     of frames failed (you should dealloc any frames that may
 	//     have already been allocated before returning)
@@ -65,7 +89,7 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	// TODO: uncomment following line when you start working in 
 	//        this function
 
-	return FALSE;
+	return TRUE;
 }
 
 /*** Initialize kernel's page directory and table ***/
