@@ -22,6 +22,29 @@ PTE *pages_768 = (PTE *)(0xC0102000);
 
 bool init_logical_memory(PCB *p, uint32_t code_size) {
 
+
+	uint32_t kernelPages = 4096/4096;
+	uint32_t userPages = 12288/4096;
+	uint32_t codePages = code_size/4096;
+	alloc_kernel_pages(kernelPages);
+	uint32_t retCode = alloc_user_pages(codePages, 0, k_page_directory, PDE_READ_WRITE);
+	if(retCode == NULL){
+		return FALSE;
+	}
+	uint32_t retStack = alloc_user_pages(userPages, (retCode + codePages * 4096), k_page_directory, PDE_READ_WRITE);
+	if(retStack == NULL){
+		return FALSE;
+	}
+	init_kernel_pages();
+
+	p->mem.start_code = 0x0;
+	p->mem.start_code = codePages * 4096;
+	p->mem.start_brk = p->mem.start_code;
+	p->mem.brk = p->mem.start_code;
+	p->mem.start_stack = (codePages * 4096) + (userPages * 4096);
+	p->mem.page_directory = k_page_directory;
+
+	return TRUE;
 	// TODO: see background material on what this function should
 	// do. High-level objectives are:
 	// 1) calculate the number of frames necessary for program code,
