@@ -43,7 +43,7 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	// TODO: comment following line when you start working in 
 	//        this function
 
-		uint32_t codePages;
+	uint32_t codePages;
 	if(code_size % 4096 == 0) {
 		codePages= code_size / 4096;
 	}
@@ -81,13 +81,17 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 		sys_printf("We are failing when making a page for the stack\n");
 		return FALSE;
 	}
+	uint32_t testPDE = (uint32_t)myPDE - KERNEL_BASE;
+	sys_printf("The location of the real PDE is : %x\n", testPDE);
 	//assigned correctly ?
 	p->mem.start_code = 0x0;
 	p->mem.end_code = code_size;
 	p->mem.start_brk = codePages * 4096;
 	p->mem.brk = p->mem.start_brk;
 	p->mem.start_stack =  0xBFBFFFFF - 0x1000; //0xBFBFEFFF
-	p->mem.page_directory = myPDE;
+	p->mem.page_directory = (PDE*)((uint32_t)myPDE - KERNEL_BASE);
+
+	sys_printf("The real PDE is : %x\n", p->mem.page_directory);
 
 	sys_printf("Looks like we are getting past the code\n");
 
