@@ -296,7 +296,7 @@ bool init_logical_memory(PCB*, uint32_t);
 void init_kernel_pages(void);
 void load_CR3(uint32_t);
 void *alloc_kernel_pages(uint32_t);
-void *alloc_user_pages(uint32_t, uint32_t, PDE *, uint32_t); 
+bool alloc_user_pages(uint32_t, uint32_t, PDE *, uint32_t);  // updated 2016-02-24
 void dealloc_page(void *, PDE *);
 void dealloc_all_pages(PDE *);
 void zero_out_pages(void *, uint32_t);
