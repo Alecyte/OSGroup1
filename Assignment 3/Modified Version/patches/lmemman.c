@@ -42,7 +42,40 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 
 	// TODO: comment following line when you start working in 
 	//        this function
+uint32_t codePages;
+	if(code_size < 4096)
+	{
+		codePages = 1;
+	}
+	else{
+		codePages = 1 + code_size/4096;
+	}
 
+	//I CANT GET SOMETHING CORRECT
+	//THINK THE ISSUE IS SETTING UP THE CORRECT LOCATION OF THE 0xC0000000 thing in page tables.
+	//WE NEED TO PUT THE LOCATION OF PAGE TABLES IN SOME ADDRESS SPACE HERE.
+	//CANNOT FIGURE OUT WHERE
+	//THE REST SHOULD BE REALLY CLOSE TO CORRECT
+
+	sys_printf("We are allocating a kernel page\n");
+
+	PDE *myPDE = (PDE*)alloc_kernel_pages(1);
+	//uint32_t n_pages, uint32_t base, PDE *page_directory, uint32_t mode
+	sys_printf("The location of the PDE should be here %x\n", myPDE);
+	//sys_printf("The location of the tempPDE is :  %x\n", tempPDE);
+
+	myPDE[768] = ((uint32_t)pages_768-KERNEL_BASE) | PDE_PRESENT | PDE_READ_WRITE;
+
+	uint32_t codeRet = (uint32_t)alloc_user_pages(1, 0x0, myPDE, PTE_READ_WRITE);
+
+	uint32_t stackRet = (uint32_t)alloc_user_pages(4, 0xBFBFC000, myPDE, PTE_READ_WRITE);
+
+	p->mem.start_code = 0x0;
+	p->mem.end_code = codePages * 4096;
+	p->mem.start_brk = p->mem.start_code;
+	p->mem.brk = p->mem.start_code;
+	p->mem.start_stack = 0xBFBFF000;
+	p->mem.page_directory = myPDE;2
 	return FALSE;
 }
 

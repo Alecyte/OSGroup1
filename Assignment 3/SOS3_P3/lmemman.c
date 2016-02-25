@@ -44,13 +44,12 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	//        this function
 
 		uint32_t codePages;
-	if(code_size < 4096){
-		codePages = 1;
+	if(code_size % 4096 == 0) {
+		codePages= code_size / 4096;
 	}
-	else{
-		codePages = 1 + code_size/4096;
+	else {
+		codePages = (uint32_t)(code_size / 4096 + 1);
 	}
-
 	//I CANT GET SOMETHING CORRECT
 	//THINK THE ISSUE IS SETTING UP THE CORRECT LOCATION OF THE 0xC0000000 thing in page tables.
 	//WE NEED TO PUT THE LOCATION OF PAGE TABLES IN SOME ADDRESS SPACE HERE.
@@ -58,37 +57,41 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	//THE REST SHOULD BE REALLY CLOSE TO CORRECT
 
 	sys_printf("We are allocating a kernel page\n");
-
+	//cleared sets to zero, unused good 
 	PDE *myPDE = (PDE*)alloc_kernel_pages(1);
 	//uint32_t n_pages, uint32_t base, PDE *page_directory, uint32_t mode
 	sys_printf("The location of the PDE is : %x\n", myPDE);
 	//sys_printf("The location of the tempPDE is :  %x\n", tempPDE);
+	
 
 	myPDE[768] = ((uint32_t)pages_768-KERNEL_BASE) | PDE_PRESENT | PDE_READ_WRITE;
 
 	sys_printf("The location of pde[768] is : %x\n", &myPDE[768]);
-
+	//allocate pages tables
+	//mode -> bits get or'ed into page table entires
 	uint32_t codeRet = (uint32_t)alloc_user_pages(1, 0x0, myPDE, PTE_READ_WRITE);
 	if(codeRet == NULL){
 		sys_printf("We are failing when making a page for the code\n");
 		return FALSE;
 	}
-
+	//BFBFFFF-16K+1 (16K=0x4000)
+	//can't we just do if(alloc_user_pages())
 	uint32_t stackRet = (uint32_t)alloc_user_pages(4, 0xBFBFC000, myPDE, PTE_READ_WRITE);
 	if(stackRet == NULL){
 		sys_printf("We are failing when making a page for the stack\n");
 		return FALSE;
 	}
-
+	//assigned correctly ?
 	p->mem.start_code = 0x0;
 	p->mem.end_code = code_size;
 	p->mem.start_brk = codePages * 4096;
 	p->mem.brk = p->mem.start_brk;
-	p->mem.start_stack = 0xBFBFEFFF;
+	p->mem.start_stack =  0xBFBFFFFF - 0x1000; //0xBFBFEFFF
 	p->mem.page_directory = myPDE;
 
 	sys_printf("Looks like we are getting past the code\n");
 
+	//deallocate frames if fails
 	return TRUE;
 
 	//return FALSE;
