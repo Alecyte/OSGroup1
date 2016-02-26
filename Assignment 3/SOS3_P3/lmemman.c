@@ -50,11 +50,7 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	else {
 		codePages = (uint32_t)(code_size / 4096 + 1);
 	}
-	//I CANT GET SOMETHING CORRECT
-	//THINK THE ISSUE IS SETTING UP THE CORRECT LOCATION OF THE 0xC0000000 thing in page tables.
-	//WE NEED TO PUT THE LOCATION OF PAGE TABLES IN SOME ADDRESS SPACE HERE.
-	//CANNOT FIGURE OUT WHERE
-	//THE REST SHOULD BE REALLY CLOSE TO CORRECT
+
 
 	sys_printf("We are allocating a kernel page\n");
 	//cleared sets to zero, unused good 
@@ -70,29 +66,41 @@ bool init_logical_memory(PCB *p, uint32_t code_size) {
 	//allocate pages tables
 	//mode -> bits get or'ed into page table entires
 	uint32_t codeRet = (uint32_t)alloc_user_pages(1, 0x0, myPDE, PTE_READ_WRITE);
+	sys_printf("codeRet is: %d\n", codeRet);
 	if(codeRet == NULL){
 		sys_printf("We are failing when making a page for the code\n");
+		dealloc_all_pages(myPDE);
 		return FALSE;
 	}
 	//BFBFFFF-16K+1 (16K=0x4000)
 	//can't we just do if(alloc_user_pages())
+	//base of user stack
 	uint32_t stackRet = (uint32_t)alloc_user_pages(4, 0xBFBFC000, myPDE, PTE_READ_WRITE);
+	sys_printf("stackRet is: %d\n", stackRet);
 	if(stackRet == NULL){
 		sys_printf("We are failing when making a page for the stack\n");
+		dealloc_all_pages(myPDE);
 		return FALSE;
 	}
+	//assigned correctly ?
+	uint32_t testPDE = (uint32_t)myPDE - KERNEL_BASE;
+	sys_printf("The location of the real PDE is : %x\n", testPDE);
 	//assigned correctly ?
 	p->mem.start_code = 0x0;
 	p->mem.end_code = code_size;
 	p->mem.start_brk = codePages * 4096;
 	p->mem.brk = p->mem.start_brk;
-	p->mem.start_stack =  0xBFBFFFFF - 0x1000; //0xBFBFEFFF
-	p->mem.page_directory = myPDE;
+	p->mem.start_stack =  0xBFBFFFFF - 0x1000; //0xBFBFEFFF kernal stack
+	p->mem.page_directory = (PDE*)((uint32_t)myPDE - KERNEL_BASE);
+
+	sys_printf("The real PDE is : %x\n", p->mem.page_directory);
 
 	sys_printf("Looks like we are getting past the code\n");
 
 	//deallocate frames if fails
 	return TRUE;
+
+
 
 	//return FALSE;
 }
