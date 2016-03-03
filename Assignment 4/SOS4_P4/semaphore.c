@@ -32,7 +32,7 @@ void init_semaphores() {
 sem_t semaphore_create(uint8_t init_value, PCB *p) {
 	// TODO: see background material on what this function should do
 	int i = 0;
-	for(;i < 256; i++){
+	for(;i < SEM_MAXNUMBER; i++){
 		if(sem[i].available == TRUE){
 			sem[i].available == FALSE;
 			sem[i].value = init_value;
@@ -58,6 +58,11 @@ void semaphore_destroy(sem_t key, PCB *p) {
 	// TODO: see background material on what this function should do
 	if(sem[key].creator == p->pid){
 		sem[key].available = TRUE;
+		while(sem[key].waitq.head != NULL){
+			PCB *tempPCB = deqeue(&sem[key].waitq);
+			tempPCB->state = TERMINATED;
+			sys_printf("A process was terminated because a semaphore was destroyed!\n");
+		}
 	}
 }
 
@@ -68,6 +73,7 @@ void semaphore_destroy(sem_t key, PCB *p) {
 bool semaphore_down(sem_t key, PCB *p) {
 	// TODO: see background material on what this function should do
 	if(sem[key].value == 0){
+		p->state = WAITING;
 		p->semaphore.wait_on = key;
 		p->semaphore.queue_index = enqueue(&sem[key].waitq, p);
 		return FALSE;

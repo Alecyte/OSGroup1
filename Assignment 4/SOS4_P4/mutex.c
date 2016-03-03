@@ -61,12 +61,19 @@ mutex_t mutex_create(PCB *p) {
 // Mutex is automatically destroyed if creator process dies; creator
 // process should always destroy a mutex when no other process is
 // holding a lock on it; otherwise the behavior is undefined
+
+//If there is something in the queue then make it p->state = TERMINATED
 void mutex_destroy(mutex_t key, PCB *p) {
 	// TODO: see background material on what this function should do
 
 		if(mx[key].creator==p->pid)
 		{
 			mx[key].available=TRUE;
+			while(mx[key].waitq.head != NULL){
+				PCB *tempPCB = deqeue(&mx[key].waitq);
+				tempPCB->state = TERMINATED;
+				sys_printf("A process was terminated because a mutex was destroyed!\n");
+			}
 		}
 }
 
@@ -87,7 +94,7 @@ bool mutex_lock(mutex_t key, PCB *p) {
 		{
 		//	mx[key].lock_with=p;
 		//	mx[key].wait_on=key;
-			//p->state = WAITING;
+			p->state = WAITING;
 		//	p->mutex.lock_with=p;
 			p->mutex.wait_on=key;
 			p->mutex.queue_index=enqueue(&mx[key].waitq,p);
