@@ -31,6 +31,17 @@ void init_semaphores() {
 // init_value is the start value of the semaphore
 sem_t semaphore_create(uint8_t init_value, PCB *p) {
 	// TODO: see background material on what this function should do
+	int i = 0;
+	for(;i < 256; i++){
+		if(sem[i].available == TRUE){
+			sem[i].available == FALSE;
+			sem[i].value = init_value;
+			sem[i].creator = p->pid;
+			sem[i].waitq.head = 0;
+			sem[i].waitq.count = 0;
+			return i;
+		}
+	}
 
 	// TODO: comment the following line before you start working
 	return 0;
@@ -45,7 +56,9 @@ sem_t semaphore_create(uint8_t init_value, PCB *p) {
 // using it; otherwise the behavior is undefined
 void semaphore_destroy(sem_t key, PCB *p) {
 	// TODO: see background material on what this function should do
-
+	if(sem[key].creator == p->pid){
+		sem[key].available = TRUE;
+	}
 }
 
 /*** DOWN operation on a semaphore ***/
@@ -54,7 +67,15 @@ void semaphore_destroy(sem_t key, PCB *p) {
 // returned.
 bool semaphore_down(sem_t key, PCB *p) {
 	// TODO: see background material on what this function should do
-
+	if(sem[key].value == 0){
+		p->semaphore.wait_on = key;
+		p->semaphore.queue_index = enqueue(&sem[key].waitq, p);
+		return FALSE;
+	}
+	else{
+		p->semaphore.wait_on = -1;
+		sem[key].value--;
+	}
 	// TODO: comment the following line before you start working
 	return TRUE;
 }
@@ -62,6 +83,14 @@ bool semaphore_down(sem_t key, PCB *p) {
 /*** UP operation on a sempahore ***/
 void semaphore_up(sem_t key, PCB *p) {
 	// TODO: see background material on what this function should do
+	sem[key].value++;
+	if(sem[key].waitq.head != NULL){
+		PCB *tempPCB = dequeue(&sem[key].waitq);
+		if(semaphore_down(key, tempPCB)){
+			tempPCB->state == READY;
+		}
+
+	}
 
 }
 
