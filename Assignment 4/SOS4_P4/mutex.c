@@ -40,7 +40,7 @@ mutex_t mutex_create(PCB *p) {
 			/*
 	available (in use now), creator (pid of process that made this call), lock_with (lock is with no process at this point), and resets the waiting queue associated with the mutex (waitq.head and waitq.count)
 	*/
-			mx[i].available=TRUE;
+			mx[i].available=FALSE;
 			mx[i].creator=p->pid;
 			//NULL?
 			mx[i].lock_with=NULL;
@@ -85,7 +85,10 @@ bool mutex_lock(mutex_t key, PCB *p) {
 	*/
 	  if(mx[key].lock_with==NULL)
 		{
-			//p->mutex.lock_with=p;
+		//	mx[key].lock_with=p;
+		//	mx[key].wait_on=key;
+			//p->state = WAITING;
+		//	p->mutex.lock_with=p;
 			p->mutex.wait_on=key;
 			p->mutex.queue_index=enqueue(&mx[key].waitq,p);
 			return TRUE;	
@@ -93,6 +96,7 @@ bool mutex_lock(mutex_t key, PCB *p) {
 		else
 		{
 			p->mutex.wait_on=-1;
+			//add current to wait q
 			return FALSE;
 		}
 
@@ -122,8 +126,16 @@ bool mutex_unlock(mutex_t key, PCB *p) {
 	*/
 	if(mx[key].lock_with==p)
 	{
+		/*if(mx[key].waitq==NULL)
+		{
+
+		}
+
+		//if q empty, 
+		//if not -> */
 		mx[key].lock_with=NULL;
 		mx[key].available=TRUE;
+	//	mx[key].wait_on=p->pid;
 		PCB *temp=dequeue(&mx[key].waitq);
 		if(mutex_lock(temp,p))
 		{
