@@ -30,9 +30,28 @@ void init_mutexes() {
 // otherwise the mutex object number is returned
 mutex_t mutex_create(PCB *p) {
 	// TODO: see background material on what this function should do
-
-	// TODO: comment the following line before you start working
+	int i;
+	int ret=0;
+	for(i=0;i<MUTEX_MAXNUMBER;i++)
+	{
+		if(mx[i].available==TRUE)
+		{
+			ret=i;
+			/*
+	available (in use now), creator (pid of process that made this call), lock_with (lock is with no process at this point), and resets the waiting queue associated with the mutex (waitq.head and waitq.count)
+	*/
+			mx[i].available=TRUE;
+			mx[i].creator=p->pid;
+			//NULL?
+			mx[i].lock_with=NULL;
+			//reset waiting Q
+			mx[i].waitq.head=0;
+			mx[i].waitq.count=0;
+			return i;
+		}
+	}
 	return 0;
+	// TODO: comment the following line before you start working
 }
 
 /*** Destroy a mutex with a given key ***/
@@ -45,6 +64,10 @@ mutex_t mutex_create(PCB *p) {
 void mutex_destroy(mutex_t key, PCB *p) {
 	// TODO: see background material on what this function should do
 
+		if(mx[key].creator==p->pid)
+		{
+			mx[key].available=TRUE;
+		}
 }
 
 /*** Obtain lock on mutex ***/
@@ -55,9 +78,33 @@ void mutex_destroy(mutex_t key, PCB *p) {
 // to obtain the lock again, it will cause a deadlock
 bool mutex_lock(mutex_t key, PCB *p) {
 	// TODO: see background material on what this function should do
+	/*
+	 if the lock is with no process, give it to the calling process
+	  (change lock_with) and return TRUE; 
+	  otherwise, insert the calling process into the waiting queue of the mutex, and return FALSE.
+	*/
+	  if(mx[key].lock_with==NULL)
+		{
+			//p->mutex.lock_with=p;
+			p->mutex.wait_on=key;
+			p->mutex.queue_index=enqueue(&mx[key].waitq,p);
+			return TRUE;	
+		}
+		else
+		{
+			p->mutex.wait_on=-1;
+			return FALSE;
+		}
+
+		/*
+	If a process is going to be inserted into the queue of a mutex,
+	 the mutex.wait_on and mutex.queue_index members of the process’s PCB are also updated. wait_on is set to the key of the mutex on which the process is going to wait,
+	  and queue_index is the index in the waiting queue where this process is inserted. wait_on should be -1 for a process not in the waiting queue of a mutex.
+	   These two members are used for cleanup if a process waiting in a mutex queue abnormally terminates (see free_mutex_locks).
+		*/
 
 	// TODO: comment the following line before you start working
-	return TRUE;
+	//return TRUE;
 }
 
 /*** Release a previously obtained lock ***/
@@ -66,7 +113,28 @@ bool mutex_lock(mutex_t key, PCB *p) {
 // is returned
 bool mutex_unlock(mutex_t key, PCB *p) {
 	// TODO: see background material on what this function should do
+	/*
+	An unlock operation is not successful if the calling process does not own the lock on the mutex. 
+	After a mutex is unlocked (lock_with=NULL),
+	mutex_unlock gives the lock to the process at the head of the waiting queue, if any. 
+	Accordingly, we will have to set lock_with, mutex.wait_on in the process PCB, and wake up the process.
 
+	*/
+	if(mx[key].lock_with==p)
+	{
+		mx[key].lock_with=NULL;
+		mx[key].available=TRUE;
+		PCB *temp=dequeue(&mx[key].waitq);
+		if(mutex_lock(temp,p))
+		{
+			p->state=READY;
+
+		}
+	}
+	else
+	{
+		return FALSE;
+	}
 	// TODO: comment the following line before you start working
 	return TRUE;
 }
