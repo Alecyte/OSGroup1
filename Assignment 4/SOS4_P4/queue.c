@@ -47,7 +47,6 @@ PCB *dequeue(QUEUE *q) {
 		q->head = (q->head + 1) % Q_MAXSIZE;
 
 	} while (ret == (PCB *)Q_ITEM_REMOVED);
-	
 	return ret;
 }
 

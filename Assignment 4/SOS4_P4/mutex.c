@@ -70,10 +70,11 @@ void mutex_destroy(mutex_t key, PCB *p) {
 		if(mx[key].creator==p->pid)
 		{
 			mx[key].available=TRUE;
-			while(mx[key].waitq.head != NULL){
+			while(mx[key].waitq.head != NULL)
+			{
 				PCB *tempPCB = dequeue(&mx[key].waitq);
 				tempPCB->state = TERMINATED;
-				sys_printf("A process was terminated because a mutex was destroyed!\n");
+			//	sys_printf("A process was terminated because a mutex was destroyed!\n");
 			}
 		}
 }
@@ -96,16 +97,17 @@ bool mutex_lock(mutex_t key, PCB *p) {
 			p->mutex.wait_on=-1;
 			mx[key].lock_with=p;
 			//add current to wait q
+	//	sys_printf("lock is true\n");
 			return TRUE;
 		}
 		else
 		{
-		//	mx[key].lock_with=p;
-		//	mx[key].wait_on=key;
+		
 			p->state = WAITING;
-		//	p->mutex.lock_with=p;
 			p->mutex.wait_on=key;
 			p->mutex.queue_index=enqueue(&mx[key].waitq,p);
+		//	sys_printf("lock is false\n");
+
 			return FALSE;
 		}
 
@@ -137,10 +139,11 @@ bool mutex_unlock(mutex_t key, PCB *p) {
 	{
 	
 		mx[key].lock_with=NULL;
-		mx[key].available=TRUE;
+		//mx[key].available=TRUE;
 		PCB *temp=dequeue(&mx[key].waitq);
 		temp->state =READY;
 		mutex_lock(key,temp);
+	//	sys_printf("unlock is true\n");
 		return TRUE;
 		/*
 		if(mutex_lock(key,temp))
@@ -150,12 +153,11 @@ bool mutex_unlock(mutex_t key, PCB *p) {
 		}
 		*/
 	}
-	else
-	{
-		return FALSE;
-	}
+
 	// TODO: comment the following line before you start working
-	return TRUE;
+	//sys_printf("unlock is false\n");
+
+	return FALSE;
 }
 
 /*** Cleanup mutexes for a process ***/

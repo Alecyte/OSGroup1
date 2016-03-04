@@ -32,9 +32,15 @@ void init_semaphores() {
 sem_t semaphore_create(uint8_t init_value, PCB *p) {
 	// TODO: see background material on what this function should do
 	int i = 1;
-	for(;i < SEM_MAXNUMBER; i++){
-		if(sem[i].available == TRUE){
-			sem[i].available == FALSE;
+//	sys_printf("INTIT VALUE IS : %d\n",init_value);
+	for(;i < SEM_MAXNUMBER; i++)
+	{
+
+		if(sem[i].available == TRUE)
+		{
+//			sys_printf("key is %d\n",i);
+
+			sem[i].available = FALSE;
 			sem[i].value = init_value;
 			sem[i].creator = p->pid;
 			//sem[i].waitq.head = 0;
@@ -64,7 +70,7 @@ void semaphore_destroy(sem_t key, PCB *p) {
 		while(sem[key].waitq.head != NULL){
 			PCB *tempPCB = dequeue(&sem[key].waitq);
 			tempPCB->state = TERMINATED;
-			sys_printf("A process was terminated because a semaphore was destroyed!\n");
+		//	sys_printf("A process was terminated because a semaphore was destroyed!\n");
 		}
 	}
 }
@@ -75,27 +81,39 @@ void semaphore_destroy(sem_t key, PCB *p) {
 // returned.
 bool semaphore_down(sem_t key, PCB *p) {
 	// TODO: see background material on what this function should do
+	//sys_printf("param key is : %d\n",key);
+//
+	//sys_printf("The value in down currently is : %d\n", sem[key].value);
 	if(sem[key].value == 0){
 		p->state = WAITING;
 		p->semaphore.wait_on = key;
+		//sys_printf("The value of the queued element is : %d\n", p->pid);
 		p->semaphore.queue_index = enqueue(&sem[key].waitq, p);
+		//sys_printf("semaphore down is false\n");
 		return FALSE;
 	}
 	else{
 		p->semaphore.wait_on = -1;
-		sem[key].value--;
+		sem[key].value = sem[key].value-1;;
+	//	sys_printf("semaphore down is true\n");
 		return TRUE;
 	}
 	// TODO: comment the following line before you start working
-	return TRUE;
+
+	// /return TRUE;
 }
 
 /*** UP operation on a sempahore ***/
 void semaphore_up(sem_t key, PCB *p) {
 	// TODO: see background material on what this function should do
-	sem[key].value++;
-	if(sem[key].waitq.head != NULL){
+//	sys_printf("The value to start is : %d\n", sem[key].value);
+	sem[key].value = sem[key].value+1;
+//	sys_printf("sema up func\n");
+	if(sem[key].waitq.count > 0){
+	//	sys_printf("We are hitting the queue part in semaphore\n");
+	//	sys_printf("sema up head not null\n");
 		PCB *tempPCB = dequeue(&sem[key].waitq);
+	//	sys_printf("The pid of the dequeued element is : %d\n", tempPCB->pid);
 		tempPCB->state = READY;
 		semaphore_down(key, tempPCB);
 		/*
