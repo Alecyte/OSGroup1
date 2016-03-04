@@ -59,7 +59,7 @@ void semaphore_destroy(sem_t key, PCB *p) {
 	if(sem[key].creator == p->pid){
 		sem[key].available = TRUE;
 		while(sem[key].waitq.head != NULL){
-			PCB *tempPCB = deqeue(&sem[key].waitq);
+			PCB *tempPCB = dequeue(&sem[key].waitq);
 			tempPCB->state = TERMINATED;
 			sys_printf("A process was terminated because a semaphore was destroyed!\n");
 		}
@@ -92,8 +92,9 @@ void semaphore_up(sem_t key, PCB *p) {
 	sem[key].value++;
 	if(sem[key].waitq.head != NULL){
 		PCB *tempPCB = dequeue(&sem[key].waitq);
-		if(semaphore_down(key, tempPCB)){
-			tempPCB->state == READY;
+		if(semaphore_down(key, tempPCB))
+		{
+			tempPCB->state = READY;
 		}
 
 	}

@@ -70,7 +70,7 @@ void mutex_destroy(mutex_t key, PCB *p) {
 		{
 			mx[key].available=TRUE;
 			while(mx[key].waitq.head != NULL){
-				PCB *tempPCB = deqeue(&mx[key].waitq);
+				PCB *tempPCB = dequeue(&mx[key].waitq);
 				tempPCB->state = TERMINATED;
 				sys_printf("A process was terminated because a mutex was destroyed!\n");
 			}
@@ -90,7 +90,7 @@ bool mutex_lock(mutex_t key, PCB *p) {
 	  (change lock_with) and return TRUE; 
 	  otherwise, insert the calling process into the waiting queue of the mutex, and return FALSE.
 	*/
-	  if(mx[key].lock_with==NULL)
+	  if(!mx[key].lock_with==NULL)
 		{
 		//	mx[key].lock_with=p;
 		//	mx[key].wait_on=key;
@@ -98,13 +98,14 @@ bool mutex_lock(mutex_t key, PCB *p) {
 		//	p->mutex.lock_with=p;
 			p->mutex.wait_on=key;
 			p->mutex.queue_index=enqueue(&mx[key].waitq,p);
-			return TRUE;	
+			return FALSE;	
 		}
 		else
 		{
 			p->mutex.wait_on=-1;
+			mx[key].lock_with=p;
 			//add current to wait q
-			return FALSE;
+			return TRUE;
 		}
 
 		/*
@@ -133,20 +134,13 @@ bool mutex_unlock(mutex_t key, PCB *p) {
 	*/
 	if(mx[key].lock_with==p)
 	{
-		/*if(mx[key].waitq==NULL)
-		{
-
-		}
-
-		//if q empty, 
-		//if not -> */
+	
 		mx[key].lock_with=NULL;
 		mx[key].available=TRUE;
-	//	mx[key].wait_on=p->pid;
 		PCB *temp=dequeue(&mx[key].waitq);
-		if(mutex_lock(temp,p))
+		if(mutex_lock(key,temp))
 		{
-			p->state=READY;
+			temp->state=READY;
 
 		}
 	}
