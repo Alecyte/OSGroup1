@@ -37,16 +37,17 @@ mutex_t mutex_create(PCB *p) {
 		if(mx[i].available==TRUE)
 		{
 			ret=i;
-			/*
-	available (in use now), creator (pid of process that made this call), lock_with (lock is with no process at this point), and resets the waiting queue associated with the mutex (waitq.head and waitq.count)
-	*/
 			mx[i].available=FALSE;
 			mx[i].creator=p->pid;
 			//NULL?
 			mx[i].lock_with=NULL;
 			//reset waiting Q
-			mx[i].waitq.head=0;
-			mx[i].waitq.count=0;
+			//mx[i].waitq.head=0;
+			//mx[i].waitq.count=0;
+			while(mx[i].waitq.head != NULL){
+				PCB *tempPCB = dequeue(&mx[i].waitq);
+			}
+
 			return i;
 		}
 	}
@@ -90,7 +91,14 @@ bool mutex_lock(mutex_t key, PCB *p) {
 	  (change lock_with) and return TRUE; 
 	  otherwise, insert the calling process into the waiting queue of the mutex, and return FALSE.
 	*/
-	  if(!mx[key].lock_with==NULL)
+	  if(mx[key].lock_with==NULL)
+		{
+			p->mutex.wait_on=-1;
+			mx[key].lock_with=p;
+			//add current to wait q
+			return TRUE;
+		}
+		else
 		{
 		//	mx[key].lock_with=p;
 		//	mx[key].wait_on=key;
@@ -98,14 +106,7 @@ bool mutex_lock(mutex_t key, PCB *p) {
 		//	p->mutex.lock_with=p;
 			p->mutex.wait_on=key;
 			p->mutex.queue_index=enqueue(&mx[key].waitq,p);
-			return FALSE;	
-		}
-		else
-		{
-			p->mutex.wait_on=-1;
-			mx[key].lock_with=p;
-			//add current to wait q
-			return TRUE;
+			return FALSE;
 		}
 
 		/*
@@ -130,19 +131,24 @@ bool mutex_unlock(mutex_t key, PCB *p) {
 	After a mutex is unlocked (lock_with=NULL),
 	mutex_unlock gives the lock to the process at the head of the waiting queue, if any. 
 	Accordingly, we will have to set lock_with, mutex.wait_on in the process PCB, and wake up the process.
-
 	*/
+
 	if(mx[key].lock_with==p)
 	{
 	
 		mx[key].lock_with=NULL;
 		mx[key].available=TRUE;
 		PCB *temp=dequeue(&mx[key].waitq);
+		temp->state =READY;
+		mutex_lock(key,temp);
+		return TRUE;
+		/*
 		if(mutex_lock(key,temp))
 		{
 			temp->state=READY;
 
 		}
+		*/
 	}
 	else
 	{

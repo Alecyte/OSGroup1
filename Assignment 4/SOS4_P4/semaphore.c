@@ -31,14 +31,17 @@ void init_semaphores() {
 // init_value is the start value of the semaphore
 sem_t semaphore_create(uint8_t init_value, PCB *p) {
 	// TODO: see background material on what this function should do
-	int i = 0;
+	int i = 1;
 	for(;i < SEM_MAXNUMBER; i++){
 		if(sem[i].available == TRUE){
 			sem[i].available == FALSE;
 			sem[i].value = init_value;
 			sem[i].creator = p->pid;
-			sem[i].waitq.head = 0;
-			sem[i].waitq.count = 0;
+			//sem[i].waitq.head = 0;
+			//sem[i].waitq.count = 0;
+			while(sem[i].waitq.head != NULL){
+				PCB *tempPCB = dequeue(&sem[i].waitq);
+			}
 			return i;
 		}
 	}
@@ -81,6 +84,7 @@ bool semaphore_down(sem_t key, PCB *p) {
 	else{
 		p->semaphore.wait_on = -1;
 		sem[key].value--;
+		return TRUE;
 	}
 	// TODO: comment the following line before you start working
 	return TRUE;
@@ -92,10 +96,14 @@ void semaphore_up(sem_t key, PCB *p) {
 	sem[key].value++;
 	if(sem[key].waitq.head != NULL){
 		PCB *tempPCB = dequeue(&sem[key].waitq);
+		tempPCB->state = READY;
+		semaphore_down(key, tempPCB);
+		/*
 		if(semaphore_down(key, tempPCB))
 		{
 			tempPCB->state = READY;
 		}
+		*/
 
 	}
 
